@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Loja de Cestas Básicas</title>
+
+<style>
+:root{
+  --primary:#007bff; --primary-dark:#0056b3; --success:#28a745;
+  --bg:#f4f4f4; --white:#fff; --gray:#6c757d;
+  --radius:8px; --shadow:0 3px 10px rgba(0,0,0,.1);
+  --step-done:#28a745; --step-pending:#ccc;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,Helvetica,sans-serif}
+body{background:var(--bg)}
+/* header */
+header{background:var(--primary);color:#fff;padding:20px;display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:1.3rem}
+header a{color:#fff;text-decoration:none;font-size:1.2rem;position:relative;margin-left:20px}
+.badge{position:absolute;top:-6px;right:-10px;background:var(--success);padding:0 6px;border-radius:9999px;font-size:.7rem}
+/* grid */
+.container{max-width:1200px;margin:30px auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;padding:0 18px}
+.card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;cursor:pointer;transition:.25s}
+.card:hover{transform:translateY(-4px)}
+.card img{width:100%;display:block}
+.card h3{padding:10px;font-size:1rem}
+/* cart sidebar */
+#cartSidebar{position:fixed;top:0;right:-420px;width:400px;height:100%;background:var(--white);box-shadow:-4px 0 14px rgba(0,0,0,.15);transition:right .35s;display:flex;flex-direction:column;z-index:200}
+#cartSidebar.open{right:0}
+.cart-header,.cart-footer{padding:20px;border-bottom:1px solid #eee}
+.cart-header{display:flex;justify-content:space-between;align-items:center}
+.cart-items{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
+.cart-item{display:flex;justify-content:space-between;font-size:.9rem}
+.cart-footer{border-top:1px solid #eee;border-bottom:none;display:flex;flex-direction:column;gap:14px}
+.cart-footer .total{display:flex;justify-content:space-between;font-weight:700}
+.cart-footer button{padding:14px;border:none;border-radius:var(--radius);background:var(--primary);color:#fff;font-weight:600;cursor:pointer}
+.cart-footer button:hover{background:var(--primary-dark)}
+/* modal genérico */
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:300}
+.modal.active{display:flex}
+.modal-box{background:var(--white);padding:28px 24px;border-radius:var(--radius);box-shadow:var(--shadow);max-width:480px;width:92%;max-height:88vh;overflow-y:auto;position:relative}
+.close-x{position:absolute;top:12px;right:16px;font-size:1.4rem;border:none;background:none;cursor:pointer}
+/* produto modal */
+.prod-img{width:100%;border-radius:6px;margin-bottom:12px}
+/* status */
+.status-wrap{margin-top:22px}
+.steps{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.step{display:flex;flex-direction:column;align-items:center;font-size:.8rem;color:var(--gray);max-width:70px;text-align:center}
+.step:before{content:'';width:26px;height:26px;border-radius:50%;border:3px solid var(--step-pending);margin-bottom:6px}
+.step.done{color:var(--success)}
+.step.done:before{background:var(--success);border-color:var(--success)}
+.connector{flex:1;height:3px;background:var(--step-pending)}
+.connector.done{background:var(--success)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Cestas Básicas</h1>
+  <div>
+    <a id="loginLink" href="#">👤</a>
+    <a id="cartLink" href="#"><span>🛒</span><span class="badge" id="cartBadge">0</span></a>
+  </div>
+</header>
+
+<main class="container" id="grid"></main>
+
+<!-- Carrinho -->
+<aside id="cartSidebar">
+  <div class="cart-header"><h2>Seu carrinho</h2><button class="close-x" onclick="toggleCart()">×</button></div>
+  <div id="cartItems" class="cart-items"></div>
+  <div class="cart-footer">
+    <div class="total"><span>Total</span><span id="cartTotal">R$ 0,00</span></div>
+    <button onclick="iniciarCheckout()">Finalizar compra</button>
+  </div>
+</aside>
+
+<!-- Modal genérico -->
+<div id="modal" class="modal"><div id="modalBox" class="modal-box"></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+/* ---------------- DADOS ---------------- */
+const cestas = [
+  {id:1,nome:"Cesta Básica Casado",preco:259.90,itens:[/* abreviado */"2x Arroz 5kg","2x Óleo 900ml","..."]},
+  {id:2,nome:"Cesta Básica Solteiro",preco:149.90,itens:["1x Arroz 5kg","1x Óleo 900ml","..."]},
+  {id:3,nome:"Cesta Básica Dia a Dia",preco:199.90,itens:["2x Arroz 5kg","2x Óleo 900ml","..."]},
+  {id:4,nome:"Cesta Básica Econômica",preco:129.90,itens:["1x Arroz 5kg","1x Óleo 900ml","..."]},
+  {id:5,nome:"Cesta Básica Doação",preco:119.90,itens:["1x Arroz 5kg","1x Óleo 900ml","..."]},
+  {id:6,nome:"Kit Generosidade",preco:89.90,itens:["2x Arroz 1kg","1x Feijão 1kg","..."]}
+];
+const FRETE = 19.90;
+
+/* ---------------- ESTADO ---------------- */
+let cart=[], user=null;
+
+/* ---------------- HELPERS ---------------- */
+const $ = s=>document.querySelector(s);
+const fmt = v=>'R$ '+v.toFixed(2).replace('.',',');
+
+/* ---------------- GRID ---------------- */
+function buildGrid(){
+  const g=$('#grid'); g.innerHTML='';
+  cestas.forEach(c=>{
+    g.innerHTML+=`
+      <div class="card" onclick="showProduct(${c.id})">
+        <img src="cesta-exemplo.jpg" alt="${c.nome}">
+        <h3>${c.nome}</h3>
+      </div>`;
+  });
+}
+
+/* ---------------- PRODUTO ---------------- */
+function showProduct(id){
+  const c=cestas.find(x=>x.id===id); if(!c)return;
+  openModal(`
+    <button class="close-x" onclick="closeModal()">×</button>
+    <h2>${c.nome}</h2>
+    <img src="cesta-exemplo.jpg" alt="${c.nome}" class="prod-img">
+    <ul>${c.itens.map(i=>`<li>${i}</li>`).join('')}</ul>
+    <div style="margin-top:12px;">
+      <label>Quantidade:</label>
+      <button onclick="chgQty(-1)">−</button>
+      <input id="qtyInput" type="number" value="1" min="1" style="width:40px;text-align:center">
+      <button onclick="chgQty(1)">+</button>
+    </div>
+    <div style="margin-top:12px;">
+      <label>CEP:</label>
+      <input type="text" id="cep" placeholder="00000-000" style="width:120px">
+      <small style="margin-left:6px;">Frete fixo: <strong>${fmt(FRETE)}</strong></small>
+    </div>
+    <button style="margin-top:14px;padding:12px 20px;background:var(--success);color:#fff;border:none;border-radius:var(--radius);cursor:pointer" onclick="addToCart(${id})">Comprar</button>
+  `);
+}
+function chgQty(d){const inp=$('#qtyInput');let v=parseInt(inp.value)||1;v+=d;if(v<1)v=1;inp.value=v;}
+function addToCart(id){
+  const qty=parseInt($('#qtyInput').value)||1;
+  const item=cart.find(i=>i.id===id); item?item.qty+=qty:cart.push({id,qty});
+  updateBadge(); closeModal(); alert('Adicionado ao carrinho!');
+}
+
+/* ---------------- CARRINHO ---------------- */
+function updateBadge(){$('#cartBadge').textContent=cart.reduce((s,i)=>s+i.qty,0);}
+function toggleCart(){$('#cartSidebar').classList.toggle('open');renderCart();}
+function renderCart(){
+  const list=$('#cartItems'); list.innerHTML='';
+  if(!cart.length){list.innerHTML='<p>Seu carrinho está vazio.</p>'; $('#cartTotal').textContent='R$ 0,00'; return;}
+  cart.forEach(i=>{
+    const p=cestas.find(c=>c.id===i.id);
+    list.innerHTML+=`<div class="cart-item"><span>${i.qty}× ${p.nome}</span><span>${fmt(i.qty*p.preco)}</span></div>`;
+  });
+  const tot=cart.reduce((s,i)=>s+i.qty*cestas.find(c=>c.id===i.id).preco,0)+ (cart.length?FRETE:0);
+  $('#cartTotal').textContent=fmt(tot);
+}
+
+/* ---------------- CHECKOUT ---------------- */
+function iniciarCheckout(){
+  if(!cart.length){alert('Carrinho vazio');return;}
+  const total=cart.reduce((s,i)=>s+i.qty*cestas.find(c=>c.id===i.id).preco,0)+FRETE;
+  openModal(`
+    <button class="close-x" onclick="closeModal()">×</button>
+    <h2>Pagamento via Pix</h2>
+    <p>Valor total (produtos + frete): <strong>${fmt(total)}</strong></p>
+    <div id="qr" style="margin:20px auto"></div>
+    <button style="padding:14px 20px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius);" onclick="pago()">Já paguei</button>
+  `);
+  new QRCode($('#qr'),{text:`Pix de ${fmt(total)}`,width:200,height:200});
+}
+function pago(){cart=[];updateBadge();renderCart();closeModal();showStatus();}
+
+/* ---------------- RASTREAMENTO ---------------- */
+function showStatus(){
+  openModal(`
+    <button class="close-x" onclick="closeModal()">×</button>
+    <h2>Status do Pedido</h2>
+    <div class="status-wrap">
+      <div class="steps" id="steps">
+        <div class="step">Confirmado</div><div class="connector"></div>
+        <div class="step">Pago</div><div class="connector"></div>
+        <div class="step">Separação</div><div class="connector"></div>
+        <div class="step">Enviado</div><div class="connector"></div>
+        <div class="step">Entregue</div>
+      </div>
+      <p id="statusTxt" style="text-align:center;margin-top:14px;font-weight:600;"></p>
+    </div>
+  `); advance(0);
+  function advance(i){
+    const st=[...$('#steps').querySelectorAll('.step')];
+    const conn=[...$('#steps').querySelectorAll('.connector')];
+    st[i].classList.add('done'); if(i>0)conn[i-1].classList.add('done');
+    $('#statusTxt').textContent=st[i].textContent;
+    if(i<st.length-1)setTimeout(()=>advance(i+1),3000); else $('#statusTxt').textContent='Pedido finalizado!';
+  }
+}
+
+/* ---------------- LOGIN SIMPLES ---------------- */
+function loginScreen(){
+  openModal(`
+    <button class="close-x" onclick="closeModal()">×</button>
+    <h2>Entrar</h2>
+    <form onsubmit="event.preventDefault();alert('Login OK');closeModal();">
+      <input type="email" placeholder="E-mail" required style="width:100%;padding:10px;margin:8px 0">
+      <input type="password" placeholder="Senha" required style="width:100%;padding:10px;margin:8px 0">
+      <button style="padding:12px 20px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius);width:100%">Entrar</button>
+    </form>
+  `);
+}
+
+/* ---------------- MODAL UTILS ---------------- */
+function openModal(html){$('#modalBox').innerHTML=html;$('#modal').classList.add('active');}
+function closeModal(){$('#modal').classList.remove('active');}
+
+/* ---------------- EVENTOS ---------------- */
+$('#cartLink').onclick=e=>{e.preventDefault();toggleCart();}
+$('#loginLink').onclick=e=>{e.preventDefault();loginScreen();}
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+
+/* ---------------- INIT ---------------- */
+buildGrid();updateBadge();
+</script>
+</body>
+</html>
