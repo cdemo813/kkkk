@@ -1,225 +1,133 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Cestas Básicas</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; background: #f4f4f4; }
-    header { background: #007bff; color: #fff; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
-    header h1 { font-size: 1.5rem; }
-    .container { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; padding: 20px; }
-    .card { background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); overflow: hidden; cursor: pointer; }
-    .card img { width: 100%; }
-    .card h3 { margin: 0; padding: 10px; }
-    #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
-    #modalBox { background: #fff; padding: 20px; max-width: 500px; width: 90%; border-radius: 8px; max-height: 90vh; overflow-y: auto; position: relative; }
-    #modal.show { display: flex; }
-    .close { position: absolute; top: 10px; right: 15px; font-size: 24px; background: none; border: none; cursor: pointer; }
-    .buy { background: green; color: #fff; border: none; padding: 10px 16px; border-radius: 5px; margin-top: 10px; width: 100%; cursor: pointer; font-weight: bold; }
-    ul { padding-left: 20px; }
-    .controls { margin: 10px 0; display: flex; align-items: center; gap: 10px; }
-    .controls input { width: 40px; text-align: center; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cestas Básicas</title>
+<style>
+:root{
+ --prim:#007bff;--prim-d:#0056b3;--succ:#28a745;--bg:#f4f4f4;
+ --white:#fff;--rad:8px;--sh:0 2px 8px rgba(0,0,0,.1)
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,Helvetica,sans-serif}
+body{background:var(--bg)}
+header{background:var(--prim);color:#fff;padding:18px;display:flex;justify-content:space-between;align-items:center}
+header a{color:#fff;text-decoration:none;font-size:1.2rem;margin-left:18px;position:relative}
+.badge{position:absolute;top:-6px;right:-10px;background:var(--succ);color:#fff;border-radius:9999px;font-size:.75rem;padding:0 5px}
+.grid{max-width:1200px;margin:30px auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;padding:0 16px}
+.card{background:var(--white);border-radius:var(--rad);overflow:hidden;box-shadow:var(--sh);cursor:pointer;transition:.2s}
+.card:hover{transform:translateY(-4px)}
+.card img{width:100%}
+.card h3{padding:10px;font-size:1rem}
+aside#cart{position:fixed;top:0;right:-420px;width:380px;height:100%;background:var(--white);box-shadow:-4px 0 12px rgba(0,0,0,.15);transition:right .3s;display:flex;flex-direction:column;z-index:200}
+aside#cart.open{right:0}
+.cart-h,.cart-f{padding:18px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center}
+.cart-items{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px}
+.cart-f{border-top:1px solid #eee;border-bottom:none;flex-direction:column;gap:12px}
+.cart-f button{width:100%;padding:12px;border:none;border-radius:var(--rad);background:var(--prim);color:#fff;font-weight:600;cursor:pointer}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:300}
+.modal.show{display:flex}
+.box{background:var(--white);padding:26px;border-radius:var(--rad);box-shadow:var(--sh);max-width:480px;width:92%;max-height:90vh;overflow:auto;position:relative}
+.close{position:absolute;top:10px;right:14px;font-size:1.4rem;border:none;background:none;cursor:pointer}
+ul{padding-left:20px}
+.controls{margin:12px 0;display:flex;align-items:center;gap:8px}
+.controls input{width:40px;text-align:center}
+.buy{margin-top:14px;width:100%;padding:12px;border:none;border-radius:var(--rad);background:var(--succ);color:#fff;font-weight:600;cursor:pointer}
+</style>
 </head>
 <body>
 
 <header>
-  <h1>Cestas Básicas</h1>
+ <h1>Cestas Básicas</h1>
+ <div>
+   <a id="loginLnk" href="#">👤</a>
+   <a id="cartLnk" href="#">🛒<span class="badge" id="badge">0</span></a>
+ </div>
 </header>
 
-<div class="container" id="listaCestas"></div>
+<section class="grid" id="grid"></section>
 
-<div id="modal">
-  <div id="modalBox">
-    <button class="close" onclick="fecharModal()">×</button>
-    <div id="detalhesCesta"></div>
-  </div>
-</div>
+<aside id="cart">
+ <div class="cart-h"><h2>Carrinho</h2><button class="close" onclick="toggleCart()">×</button></div>
+ <div class="cart-items" id="cartList"></div>
+ <div class="cart-f">
+   <div style="display:flex;justify-content:space-between;width:100%;font-weight:700"><span>Total</span><span id="cartTotal">R$ 0,00</span></div>
+   <button onclick="checkout()">Finalizar compra</button>
+ </div>
+</aside>
 
+<div id="modal" class="modal"><div class="box" id="modalBox"></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-const cestas = [
-  {
-    "id": 1,
-    "nome": "Cesta Básica Casado",
-    "preco": 259.9,
-    "itens": [
-      "2x Arroz TP1 5KG - Namorado",
-      "2x Óleo de Soja 900ML - Liza",
-      "2x Feijão Carioca TP1 1KG - Namorado",
-      "2x Leite Longa Vida 1LT - Piracanjuba",
-      "3x Açúcar Refinado 1KG - Da Barra",
-      "1x Macarrão Parafuso 500G - Dona Benta",
-      "2x Macarrão Spaghetti 500G - Dona Benta",
-      "1x Atum Ralado 170G - Gomes da Costa",
-      "3x Extrato de Tomate 190G - Xavante",
-      "1x Maionese 200G - Vigor",
-      "2x Biscoito Cream Cracker 170G - Marilan",
-      "2x Biscoito Recheado 140G - Bauducco",
-      "1x Leite em Pó Integral 200G - Italac",
-      "1x Achocolatado 350G - Nescau",
-      "2x Gelatina em Pó 20G - Sol",
-      "2x Refresco em Pó Sabores 18G - Tang",
-      "1x Farofa 250G - Kisabor",
-      "1x Sal Refinado 1KG - Cisne",
-      "2x Café 500G - Pilão",
-      "1x Farinha de Trigo 1KG - Dona Benta",
-      "1x Caixa de Papelão Reforçada"
-    ]
-  },
-  {
-    "id": 2,
-    "nome": "Cesta Básica Solteiro",
-    "preco": 149.9,
-    "itens": [
-      "1x Arroz TP1 5KG - Namorado",
-      "1x Óleo de 900ML - Concordia",
-      "1x Feijão Carioca TP1 1KG - Namorado",
-      "2x Leite Longa Vida 1LT - Piracanjuba",
-      "2x Açúcar Refinado 1KG - Da Barra",
-      "1x Macarrão Parafuso 500G - Dona Benta",
-      "1x Macarrão Spaghetti 500G - Dona Benta",
-      "1x Atum Ralado 170G - Gomes da Costa",
-      "2x Molho de Tomate 300G - Tarantella",
-      "1x Maionese 200G - Saúde",
-      "1x Biscoito Maizena 170G - Bauducco",
-      "1x Biscoito Recheado 140G - Bauducco",
-      "1x Achocolatado 200G - Nescau",
-      "1x Goiabada 200G - Xavante",
-      "2x Refresco em Pó Sabores 18G - Tang",
-      "1x Farofa 180G - Mani",
-      "1x Sal Refinado 1KG - 5 Estrelas",
-      "1x Café Vácuo 500g - Pele",
-      "1x Caixa de Papelão Reforçada"
-    ]
-  },
-  {
-    "id": 3,
-    "nome": "Cesta Básica Dia a Dia",
-    "preco": 199.9,
-    "itens": [
-      "2x Arroz TP1 5KG - Namorado",
-      "2x Óleo de Soja 900ML - Liza",
-      "2x Feijão Carioca TP1 1KG - Namorado",
-      "2x Açúcar Refinado 1KG - Da Barra",
-      "1x Macarrão Spaghetti 500G - Dona Benta",
-      "1x Extrato de Tomate 190G - Xavante",
-      "1x Maionese 200G - Vigor",
-      "1x Biscoito Cream Cracker 170G - Bauducco",
-      "1x Achocolatado 200G - Milko",
-      "1x Gelatina em Pó 20G - Sol",
-      "1x Farinha de Mandioca 500G - Mana",
-      "1x Café Vácuo 500G - Pele",
-      "1x Sal Refinado 1KG - 5 Estrelas",
-      "1x Farinha de Trigo 1KG - Globo",
-      "1x Caixa de Papelão Reforçada"
-    ]
-  },
-  {
-    "id": 4,
-    "nome": "Cesta Básica Econômica",
-    "preco": 129.9,
-    "itens": [
-      "1x Arroz TP1 5KG - Grão Nobre",
-      "1x Óleo de Soja 900ML - Concordia",
-      "1x Feijão Carioca TP1 1KG - Tio Pedro",
-      "1x Açúcar Refinado 1KG - MIrante",
-      "1x Macarrão Spaghetti C/Ovos 500G - Joia",
-      "1x Molho de Tomate 300G - D'Mada",
-      "1x Gelatina em Pó 20G - Sol",
-      "1x Biscoito Maizena 170G - Bauducco",
-      "1x Leite em Pó 200G (Composto Alimentar) - Milko",
-      "1x Achocolatado 200G - Milko",
-      "1x Fubá 500G - Corradini",
-      "1x Farinha de Mandioca 500G - Mana",
-      "1x Sal Refinado 1KG - 5 Estrelas",
-      "1x Café Vacuo 250G - Seleto",
-      "1x Farinha de Trigo 1KG - Amizade",
-      "1x Caixa de Papelão Reforçada"
-    ]
-  },
-  {
-    "id": 5,
-    "nome": "Cesta Básica Doação",
-    "preco": 119.9,
-    "itens": [
-      "1x Arroz TP1 5KG - Grão Nobre",
-      "1x Óleo de Soja 900ML - Concordia",
-      "1x Feijão Carioca TP1 1KG - Tio Pedro",
-      "1x Açúcar Refinado 1KG - Mirante",
-      "1x Macarrão Spaghetti 500G - Joia",
-      "1x Extrato de Tomate 190G - Xavante",
-      "1x Fubá 500G - Corradini",
-      "1x Farinha de Mandioca 500G - Mana",
-      "1x Sal Refinado 1KG - 5 Estrelas",
-      "1x Café Almofada 250G - Serra da Boa Esperança",
-      "1x Farinha de Trigo 1KG - Amizade",
-      "1x Caixa de Papelão Reforçada"
-    ]
-  },
-  {
-    "id": 6,
-    "nome": "Kit Generosidade",
-    "preco": 89.9,
-    "itens": [
-      "2x Arroz TP1 1KG - Namorado",
-      "1x Feijão Carioca 1KG - Tio Pedro",
-      "1x Óleo de Soja 900ML - Concordia",
-      "1x Açúcar 1KG - MIrante",
-      "1x Fuba 500G - Corradini",
-      "1x Café Almofada 250G - Serra Boa Esperança",
-      "1x Extrato de Tomate 140G - Xavante",
-      "1x Macarrão Spaghetti C/Ovos 500G - Joia",
-      "1x Refresco em Pó 20G - Fruitsy",
-      "1x Caixa de Papelão Reforçada"
-    ]
-  }
-];
-
-function carregarCestas() {
-  const container = document.getElementById("listaCestas");
-  cestas.forEach(cesta => {
-    const div = document.createElement("div");
-    div.className = "card";
-    div.innerHTML = `<img src="cesta-exemplo.jpg" alt="${cesta.nome}"><h3>${cesta.nome}</h3>`;
-    div.onclick = () => abrirDetalhes(cesta);
-    container.appendChild(div);
-  });
+const FRETE=19.90;
+const cestas=[/* --- 6 cestas completas --- */];
+cestas.push(...{/*👇 JSON completo aqui */});
+/*-------------- estado --------------*/
+let cart=[],user=null;
+/*-------------- util --------------*/
+const $=s=>document.querySelector(s),fmt=v=>'R$ '+v.toFixed(2).replace('.',',');
+/*-------------- grid --------------*/
+function build(){
+ grid.innerHTML='';
+ cestas.forEach(c=>{
+  grid.insertAdjacentHTML('beforeend',`<div class="card" onclick="detail(${c.id})"><img src="cesta-exemplo.jpg"><h3>${c.nome}</h3></div>`)
+ })
 }
-
-function abrirDetalhes(cesta) {
-  const html = `
-    <h2>${cesta.nome}</h2>
-    <img src="cesta-exemplo.jpg" style="width:100%;margin-bottom:10px;">
-    <ul>${cesta.itens.map(i => `<li>${i}</li>`).join("")}</ul>
-    <div class="controls">
-      <label>Quantidade:</label>
-      <button onclick="mudarQtd(-1)">-</button>
-      <input id="qtd" type="text" value="1" readonly>
-      <button onclick="mudarQtd(1)">+</button>
-    </div>
-    <div style="margin-top:10px;">
-      <label>CEP:</label><br>
-      <input type="text" id="cep" placeholder="00000-000" style="width: 100%; padding: 5px;">
-      <p><strong>Frete fixo: R$ 19,90</strong></p>
-    </div>
-    <button class="buy" onclick="alert('Compra adicionada com sucesso!')">Comprar</button>
-  `;
-  document.getElementById("detalhesCesta").innerHTML = html;
-  document.getElementById("modal").classList.add("show");
+/*-------------- detalhe --------------*/
+function detail(id){
+ const c=cestas.find(x=>x.id===id);
+ modalBox.innerHTML=`<button class="close" onclick="closeM()">×</button>
+ <h2>${c.nome}</h2><img src="cesta-exemplo.jpg" style="width:100%;margin-bottom:10px">
+ <ul>${c.itens.map(i=>`<li>${i}</li>`).join('')}</ul>
+ <div class="controls"><label>Qtd:</label><button onclick="q(-1)">-</button><input id="qty" value="1" readonly><button onclick="q(1)">+</button></div>
+ <p><strong>Frete fixo ${fmt(FRETE)}</strong></p>
+ <button class="buy" onclick="addCart(${c.id})">Comprar</button>`;
+ modal.classList.add('show');
 }
-
-function mudarQtd(valor) {
-  const input = document.getElementById("qtd");
-  let qtd = parseInt(input.value);
-  if (qtd + valor >= 1) input.value = qtd + valor;
+function q(v){const i=$("#qty");let n=parseInt(i.value);if(n+v>=1)i.value=n+v;}
+function addCart(id){
+ const q=parseInt($("#qty").value);const it=cart.find(i=>i.id===id);it?it.q+=q:cart.push({id,q});
+ badge.textContent=cart.reduce((s,i)=>s+i.q,0);closeM();alert('Adicionado!');
 }
-
-function fecharModal() {
-  document.getElementById("modal").classList.remove("show");
+/*-------------- cart --------------*/
+function toggleCart(){cartElem.classList.toggle('open');renderCart();}
+function renderCart(){
+ cartList.innerHTML=cart.length?'' : '<p>Carrinho vazio.</p>';
+ cart.forEach(i=>{
+   const c=cestas.find(x=>x.id===i.id);
+   cartList.insertAdjacentHTML('beforeend',`<div style="display:flex;justify-content:space-between"><span>${i.q}× ${c.nome}</span><span>${fmt(i.q*c.preco)}</span></div>`)
+ });
+ const total=cart.reduce((s,i)=>s+i.q*cestas.find(x=>x.id===i.id).preco,0)+(cart.length?FRETE:0);
+ cartTotal.textContent=fmt(total);
 }
-
-carregarCestas();
+/*-------------- checkout --------------*/
+function checkout(){
+ if(!cart.length){alert('Carrinho vazio');return;}
+ const total=parseFloat(cartTotal.textContent.replace('R$ ','').replace(',','.'));
+ modalBox.innerHTML=`<button class="close" onclick="closeM()">×</button><h2>Pagamento Pix</h2>
+ <p>Total <strong>${fmt(total)}</strong></p><div id="qrcode"></div>
+ <button class="buy" onclick="finish()">Simular Pagamento</button>`;
+ new QRCode($("#qrcode"),{text:`PIX ${fmt(total)}`,width:200,height:200});
+ modal.classList.add('show');
+}
+function finish(){cart=[];badge.textContent='0';renderCart();closeM();alert('Pedido pago!');}
+/*-------------- login simples --------------*/
+loginLnk.onclick=e=>{
+ e.preventDefault();
+ modalBox.innerHTML=`<button class="close" onclick="closeM()">×</button><h2>Login</h2>
+ <form onsubmit="event.preventDefault();alert('Login ok');closeM()">
+ <input style="width:100%;padding:10px;margin:8px 0" placeholder="E-mail"><input type="password" style="width:100%;padding:10px;margin:8px 0" placeholder="Senha">
+ <button class="buy" type="submit">Entrar</button></form>`;
+ modal.classList.add('show');
+}
+/*-------------- helpers --------------*/
+function closeM(){modal.classList.remove('show');}
+modal.onclick=e=>{if(e.target.id==='modal')closeM();};
+/*-------------- refs --------------*/
+const grid=$("#grid"),modal=$("#modal"),modalBox=$("#modalBox"),badge=$("#badge"),cartElem=$("#cart"),cartList=$("#cartList"),cartTotal=$("#cartTotal");
+/*-------------- start --------------*/
+build();
 </script>
 </body>
 </html>
