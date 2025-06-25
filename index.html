@@ -1,92 +1,225 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Loja de Cestas Básicas</title>
-<style>
-body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f4f4}
-header{background:#007bff;color:#fff;padding:20px;display:flex;justify-content:space-between;align-items:center}
-header a{color:#fff;text-decoration:none;font-size:1.2rem;margin-left:18px}
-.badge{background:#28a745;color:#fff;border-radius:50%;font-size:.75rem;padding:2px 6px;position:relative;top:-8px;left:-6px}
-.grid{max-width:1200px;margin:30px auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;padding:0 16px}
-.card{background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1);cursor:pointer;transition:.2s}
-.card:hover{transform:translateY(-4px)}
-.card img{width:100%;display:block}
-.card h3{padding:10px;font-size:1rem;margin:0}
-#modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);justify-content:center;align-items:center}
-#modal.show{display:flex}
-#box{background:#fff;border-radius:8px;max-width:500px;width:90%;max-height:90vh;overflow:auto;padding:20px;position:relative}
-#box h2{margin-top:0}
-.close{position:absolute;top:8px;right:12px;font-size:1.4rem;border:none;background:none;cursor:pointer}
-ul{padding-left:20px}
-.controls{margin:12px 0}
-.controls input{width:40px;text-align:center}
-.buy{display:block;width:100%;padding:12px;border:none;border-radius:6px;background:#28a745;color:#fff;font-weight:600;cursor:pointer;margin-top:14px}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cestas Básicas</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f4f4f4; }
+    header { background: #007bff; color: #fff; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { font-size: 1.5rem; }
+    .container { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; padding: 20px; }
+    .card { background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); overflow: hidden; cursor: pointer; }
+    .card img { width: 100%; }
+    .card h3 { margin: 0; padding: 10px; }
+    #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
+    #modalBox { background: #fff; padding: 20px; max-width: 500px; width: 90%; border-radius: 8px; max-height: 90vh; overflow-y: auto; position: relative; }
+    #modal.show { display: flex; }
+    .close { position: absolute; top: 10px; right: 15px; font-size: 24px; background: none; border: none; cursor: pointer; }
+    .buy { background: green; color: #fff; border: none; padding: 10px 16px; border-radius: 5px; margin-top: 10px; width: 100%; cursor: pointer; font-weight: bold; }
+    ul { padding-left: 20px; }
+    .controls { margin: 10px 0; display: flex; align-items: center; gap: 10px; }
+    .controls input { width: 40px; text-align: center; }
+  </style>
 </head>
 <body>
 
 <header>
   <h1>Cestas Básicas</h1>
-  <div>
-    <a id="login" href="#">👤</a>
-    <a id="cart" href="#">🛒<span class="badge" id="count">0</span></a>
-  </div>
 </header>
 
-<div class="grid" id="grid"></div>
+<div class="container" id="listaCestas"></div>
 
 <div id="modal">
-  <div id="box">
-    <button class="close" onclick="closeModal()">×</button>
-    <div id="content"></div>
+  <div id="modalBox">
+    <button class="close" onclick="fecharModal()">×</button>
+    <div id="detalhesCesta"></div>
   </div>
 </div>
 
 <script>
-/* ---- dados completos ---- */
 const cestas = [
-{ id:1, nome:"Cesta Básica Casado", preco:259.90, itens:["2x Arroz TP1 5KG - Namorado","2x Óleo de Soja 900ML - Liza","2x Feijão Carioca TP1 1KG - Namorado","2x Leite Longa Vida 1LT - Piracanjuba","3x Açúcar Refinado 1KG - Da Barra","1x Macarrão Parafuso 500G - Dona Benta","2x Macarrão Spaghetti 500G - Dona Benta","1x Atum Ralado 170G - Gomes da Costa","3x Extrato de Tomate 190G - Xavante","1x Maionese 200G - Vigor","2x Biscoito Cream Cracker 170G - Marilan","2x Biscoito Recheado 140G - Bauducco","1x Leite em Pó Integral 200G - Italac","1x Achocolatado 350G - Nescau","2x Gelatina em Pó 20G - Sol","2x Refresco em Pó 18G - Tang","1x Farofa 250G - Kisabor","1x Sal Refinado 1KG - Cisne","2x Café 500G - Pilão","1x Farinha de Trigo 1KG - Dona Benta","1x Caixa de Papelão Reforçada"]},
-{ id:2, nome:"Cesta Básica Solteiro", preco:149.90, itens:["1x Arroz TP1 5KG - Namorado","1x Óleo 900ML - Concordia","1x Feijão Carioca TP1 1KG - Namorado","2x Leite Longa Vida 1LT - Piracanjuba","2x Açúcar Refinado 1KG - Da Barra","1x Macarrão Parafuso 500G - Dona Benta","1x Macarrão Spaghetti 500G - Dona Benta","1x Atum Ralado 170G - Gomes da Costa","2x Molho de Tomate 300G - Tarantella","1x Maionese 200G - Saúde","1x Biscoito Maizena 170G - Bauducco","1x Biscoito Recheado 140G - Bauducco","1x Achocolatado 200G - Nescau","1x Goiabada 200G - Xavante","2x Refresco em Pó 18G - Tang","1x Farofa 180G - Mani","1x Sal Refinado 1KG - 5 Estrelas","1x Café Vácuo 500G - Pele","1x Caixa de Papelão Reforçada"]},
-{ id:3, nome:"Cesta Básica Dia a Dia", preco:199.90, itens:["2x Arroz TP1 5KG - Namorado","2x Óleo de Soja 900ML - Liza","2x Feijão Carioca TP1 1KG - Namorado","2x Açúcar Refinado 1KG - Da Barra","1x Macarrão Spaghetti 500G - Dona Benta","1x Extrato de Tomate 190G - Xavante","1x Maionese 200G - Vigor","1x Biscoito Cream Cracker 170G - Bauducco","1x Achocolatado 200G - Milko","1x Gelatina em Pó 20G - Sol","1x Farinha de Mandioca 500G - Mana","1x Café Vácuo 500G - Pele","1x Sal Refinado 1KG - 5 Estrelas","1x Farinha de Trigo 1KG - Globo","1x Caixa de Papelão Reforçada"]},
-{ id:4, nome:"Cesta Básica Econômica", preco:129.90, itens:["1x Arroz TP1 5KG - Grão Nobre","1x Óleo de Soja 900ML - Concordia","1x Feijão Carioca TP1 1KG - Tio Pedro","1x Açúcar Refinado 1KG - MIrante","1x Macarrão Spaghetti C/Ovos 500G - Joia","1x Molho de Tomate 300G - D'Mada","1x Gelatina em Pó 20G - Sol","1x Biscoito Maizena 170G - Bauducco","1x Leite em Pó 200G - Milko","1x Achocolatado 200G - Milko","1x Fubá 500G - Corradini","1x Farinha de Mandioca 500G - Mana","1x Sal Refinado 1KG - 5 Estrelas","1x Café Vácuo 250G - Seleto","1x Farinha de Trigo 1KG - Amizade","1x Caixa de Papelão Reforçada"]},
-{ id:5, nome:"Cesta Básica Doação", preco:119.90, itens:["1x Arroz TP1 5KG - Grão Nobre","1x Óleo de Soja 900ML - Concordia","1x Feijão Carioca TP1 1KG - Tio Pedro","1x Açúcar Refinado 1KG - Mirante","1x Macarrão Spaghetti 500G - Joia","1x Extrato de Tomate 190G - Xavante","1x Fubá 500G - Corradini","1x Farinha de Mandioca 500G - Mana","1x Sal Refinado 1KG - 5 Estrelas","1x Café Almofada 250G - Serra da Boa Esperança","1x Farinha de Trigo 1KG - Amizade","1x Caixa de Papelão Reforçada"]},
-{ id:6, nome:"Kit Generosidade", preco:89.90, itens:["2x Arroz TP1 1KG - Namorado","1x Feijão Carioca 1KG - Tio Pedro","1x Óleo de Soja 900ML - Concordia","1x Açúcar 1KG - MIrante","1x Fubá 500G - Corradini","1x Café Almofada 250G - Serra Boa Esperança","1x Extrato de Tomate 140G - Xavante","1x Macarrão Spaghetti C/Ovos 500G - Joia","1x Refresco em Pó 20G - Fruitsy","1x Caixa de Papelão Reforçada"]}
+  {
+    "id": 1,
+    "nome": "Cesta Básica Casado",
+    "preco": 259.9,
+    "itens": [
+      "2x Arroz TP1 5KG - Namorado",
+      "2x Óleo de Soja 900ML - Liza",
+      "2x Feijão Carioca TP1 1KG - Namorado",
+      "2x Leite Longa Vida 1LT - Piracanjuba",
+      "3x Açúcar Refinado 1KG - Da Barra",
+      "1x Macarrão Parafuso 500G - Dona Benta",
+      "2x Macarrão Spaghetti 500G - Dona Benta",
+      "1x Atum Ralado 170G - Gomes da Costa",
+      "3x Extrato de Tomate 190G - Xavante",
+      "1x Maionese 200G - Vigor",
+      "2x Biscoito Cream Cracker 170G - Marilan",
+      "2x Biscoito Recheado 140G - Bauducco",
+      "1x Leite em Pó Integral 200G - Italac",
+      "1x Achocolatado 350G - Nescau",
+      "2x Gelatina em Pó 20G - Sol",
+      "2x Refresco em Pó Sabores 18G - Tang",
+      "1x Farofa 250G - Kisabor",
+      "1x Sal Refinado 1KG - Cisne",
+      "2x Café 500G - Pilão",
+      "1x Farinha de Trigo 1KG - Dona Benta",
+      "1x Caixa de Papelão Reforçada"
+    ]
+  },
+  {
+    "id": 2,
+    "nome": "Cesta Básica Solteiro",
+    "preco": 149.9,
+    "itens": [
+      "1x Arroz TP1 5KG - Namorado",
+      "1x Óleo de 900ML - Concordia",
+      "1x Feijão Carioca TP1 1KG - Namorado",
+      "2x Leite Longa Vida 1LT - Piracanjuba",
+      "2x Açúcar Refinado 1KG - Da Barra",
+      "1x Macarrão Parafuso 500G - Dona Benta",
+      "1x Macarrão Spaghetti 500G - Dona Benta",
+      "1x Atum Ralado 170G - Gomes da Costa",
+      "2x Molho de Tomate 300G - Tarantella",
+      "1x Maionese 200G - Saúde",
+      "1x Biscoito Maizena 170G - Bauducco",
+      "1x Biscoito Recheado 140G - Bauducco",
+      "1x Achocolatado 200G - Nescau",
+      "1x Goiabada 200G - Xavante",
+      "2x Refresco em Pó Sabores 18G - Tang",
+      "1x Farofa 180G - Mani",
+      "1x Sal Refinado 1KG - 5 Estrelas",
+      "1x Café Vácuo 500g - Pele",
+      "1x Caixa de Papelão Reforçada"
+    ]
+  },
+  {
+    "id": 3,
+    "nome": "Cesta Básica Dia a Dia",
+    "preco": 199.9,
+    "itens": [
+      "2x Arroz TP1 5KG - Namorado",
+      "2x Óleo de Soja 900ML - Liza",
+      "2x Feijão Carioca TP1 1KG - Namorado",
+      "2x Açúcar Refinado 1KG - Da Barra",
+      "1x Macarrão Spaghetti 500G - Dona Benta",
+      "1x Extrato de Tomate 190G - Xavante",
+      "1x Maionese 200G - Vigor",
+      "1x Biscoito Cream Cracker 170G - Bauducco",
+      "1x Achocolatado 200G - Milko",
+      "1x Gelatina em Pó 20G - Sol",
+      "1x Farinha de Mandioca 500G - Mana",
+      "1x Café Vácuo 500G - Pele",
+      "1x Sal Refinado 1KG - 5 Estrelas",
+      "1x Farinha de Trigo 1KG - Globo",
+      "1x Caixa de Papelão Reforçada"
+    ]
+  },
+  {
+    "id": 4,
+    "nome": "Cesta Básica Econômica",
+    "preco": 129.9,
+    "itens": [
+      "1x Arroz TP1 5KG - Grão Nobre",
+      "1x Óleo de Soja 900ML - Concordia",
+      "1x Feijão Carioca TP1 1KG - Tio Pedro",
+      "1x Açúcar Refinado 1KG - MIrante",
+      "1x Macarrão Spaghetti C/Ovos 500G - Joia",
+      "1x Molho de Tomate 300G - D'Mada",
+      "1x Gelatina em Pó 20G - Sol",
+      "1x Biscoito Maizena 170G - Bauducco",
+      "1x Leite em Pó 200G (Composto Alimentar) - Milko",
+      "1x Achocolatado 200G - Milko",
+      "1x Fubá 500G - Corradini",
+      "1x Farinha de Mandioca 500G - Mana",
+      "1x Sal Refinado 1KG - 5 Estrelas",
+      "1x Café Vacuo 250G - Seleto",
+      "1x Farinha de Trigo 1KG - Amizade",
+      "1x Caixa de Papelão Reforçada"
+    ]
+  },
+  {
+    "id": 5,
+    "nome": "Cesta Básica Doação",
+    "preco": 119.9,
+    "itens": [
+      "1x Arroz TP1 5KG - Grão Nobre",
+      "1x Óleo de Soja 900ML - Concordia",
+      "1x Feijão Carioca TP1 1KG - Tio Pedro",
+      "1x Açúcar Refinado 1KG - Mirante",
+      "1x Macarrão Spaghetti 500G - Joia",
+      "1x Extrato de Tomate 190G - Xavante",
+      "1x Fubá 500G - Corradini",
+      "1x Farinha de Mandioca 500G - Mana",
+      "1x Sal Refinado 1KG - 5 Estrelas",
+      "1x Café Almofada 250G - Serra da Boa Esperança",
+      "1x Farinha de Trigo 1KG - Amizade",
+      "1x Caixa de Papelão Reforçada"
+    ]
+  },
+  {
+    "id": 6,
+    "nome": "Kit Generosidade",
+    "preco": 89.9,
+    "itens": [
+      "2x Arroz TP1 1KG - Namorado",
+      "1x Feijão Carioca 1KG - Tio Pedro",
+      "1x Óleo de Soja 900ML - Concordia",
+      "1x Açúcar 1KG - MIrante",
+      "1x Fuba 500G - Corradini",
+      "1x Café Almofada 250G - Serra Boa Esperança",
+      "1x Extrato de Tomate 140G - Xavante",
+      "1x Macarrão Spaghetti C/Ovos 500G - Joia",
+      "1x Refresco em Pó 20G - Fruitsy",
+      "1x Caixa de Papelão Reforçada"
+    ]
+  }
 ];
 
-function $(sel){return document.querySelector(sel)}
-function montarGrid(){
-  const g=$("#grid"); g.innerHTML="";
-  cestas.forEach(c=>{
-    const div=document.createElement("div");
-    div.className="card";
-    div.innerHTML=`<img src="cesta-exemplo.jpg"><h3>${c.nome}</h3>`;
-    div.onclick=()=>abrirDetalhes(c);
-    g.appendChild(div);
+function carregarCestas() {
+  const container = document.getElementById("listaCestas");
+  cestas.forEach(cesta => {
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `<img src="cesta-exemplo.jpg" alt="${cesta.nome}"><h3>${cesta.nome}</h3>`;
+    div.onclick = () => abrirDetalhes(cesta);
+    container.appendChild(div);
   });
 }
-function abrirDetalhes(c){
-  $("#detalhesCesta").innerHTML=`
-    <h2>${c.nome}</h2>
-    <img src="cesta-exemplo.jpg" style="width:100%;border-radius:6px">
-    <ul>${c.itens.map(i=>"<li>"+i+"</li>").join("")}</ul>
+
+function abrirDetalhes(cesta) {
+  const html = `
+    <h2>${cesta.nome}</h2>
+    <img src="cesta-exemplo.jpg" style="width:100%;margin-bottom:10px;">
+    <ul>${cesta.itens.map(i => `<li>${i}</li>`).join("")}</ul>
     <div class="controls">
-      <label>Qtd:</label>
-      <button onclick="qtd(-1)">-</button>
-      <input id="qty" value="1" readonly>
-      <button onclick="qtd(1)">+</button>
+      <label>Quantidade:</label>
+      <button onclick="mudarQtd(-1)">-</button>
+      <input id="qtd" type="text" value="1" readonly>
+      <button onclick="mudarQtd(1)">+</button>
     </div>
-    <p>Frete fixo: <strong>R$ 19,90</strong></p>
-    <button class="buy" onclick="alert('Adicionado!');fecharModal()">Comprar</button>
+    <div style="margin-top:10px;">
+      <label>CEP:</label><br>
+      <input type="text" id="cep" placeholder="00000-000" style="width: 100%; padding: 5px;">
+      <p><strong>Frete fixo: R$ 19,90</strong></p>
+    </div>
+    <button class="buy" onclick="alert('Compra adicionada com sucesso!')">Comprar</button>
   `;
-  $("#modal").classList.add("show");
+  document.getElementById("detalhesCesta").innerHTML = html;
+  document.getElementById("modal").classList.add("show");
 }
-function qtd(v){
-  const inp=$("#qty"); let n=parseInt(inp.value); n=n+v; if(n<1)n=1; inp.value=n;
+
+function mudarQtd(valor) {
+  const input = document.getElementById("qtd");
+  let qtd = parseInt(input.value);
+  if (qtd + valor >= 1) input.value = qtd + valor;
 }
-function fecharModal(){$("#modal").classList.remove("show");}
-montarGrid();
+
+function fecharModal() {
+  document.getElementById("modal").classList.remove("show");
+}
+
+carregarCestas();
 </script>
 </body>
 </html>
